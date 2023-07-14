@@ -118,7 +118,7 @@ def instance_norm(
 
     N = x.shape[-2]
     C = x.shape[-1]
-    S = x.shape[0:-2]
+    S = x.shape[:-2]
     x = tf.reshape(x, (1, *S, N * C))
     mean = tf.tile(mean, [N])
     variance = tf.tile(variance, [N])
