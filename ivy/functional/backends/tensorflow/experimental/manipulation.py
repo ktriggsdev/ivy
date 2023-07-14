@@ -87,16 +87,12 @@ def top_k(
     k = min(k, x.shape[axis])
     if not largest:
         indices = tf.experimental.numpy.argsort(x, axis=axis)
-        indices = tf.experimental.numpy.take(
-            indices, tf.experimental.numpy.arange(k), axis=axis
-        )
-        indices = tf.dtypes.cast(indices, tf.int32)
     else:
         indices = tf.experimental.numpy.argsort(-x, axis=axis)
-        indices = tf.experimental.numpy.take(
-            indices, tf.experimental.numpy.arange(k), axis=axis
-        )
-        indices = tf.dtypes.cast(indices, tf.int32)
+    indices = tf.experimental.numpy.take(
+        indices, tf.experimental.numpy.arange(k), axis=axis
+    )
+    indices = tf.dtypes.cast(indices, tf.int32)
     if not sorted:
         indices = tf.sort(indices, axis=axis)
     topk_res = NamedTuple("top_k", [("values", tf.Tensor), ("indices", tf.Tensor)])
@@ -208,7 +204,7 @@ def take_along_axis(
     if mode == "clip":
         max_index = arr.shape[axis] - 1
         indices = tf.clip_by_value(indices, 0, max_index)
-    elif mode in ("fill", "drop"):
+    elif mode in {"fill", "drop"}:
         if "float" in str(arr.dtype) or "complex" in str(arr.dtype):
             fill_value = tf.constant(float("nan"), dtype=arr.dtype)
         elif "uint" in str(arr.dtype):
@@ -243,13 +239,12 @@ def hsplit(
 def broadcast_shapes(
     *shapes: Union[List[int], List[Tuple]],
 ) -> Tuple[int, ...]:
-    if len(shapes) > 1:
-        desired_shape = tf.broadcast_dynamic_shape(shapes[0], shapes[1])
-        if len(shapes) > 2:
-            for i in range(2, len(shapes)):
-                desired_shape = tf.broadcast_dynamic_shape(desired_shape, shapes[i])
-    else:
+    if len(shapes) <= 1:
         return [shapes[0]]
+    desired_shape = tf.broadcast_dynamic_shape(shapes[0], shapes[1])
+    if len(shapes) > 2:
+        for i in range(2, len(shapes)):
+            desired_shape = tf.broadcast_dynamic_shape(desired_shape, shapes[i])
     return tuple(desired_shape.numpy().tolist())
 
 
@@ -284,11 +279,9 @@ def concat_from_sequence(
         highest_dtype = ivy.as_native_dtype(ivy.promote_types(highest_dtype, i.dtype))
 
     if new_axis == 0:
-        ret = tf.concat(input_sequence, axis=axis)
-        return ret
+        return tf.concat(input_sequence, axis=axis)
     elif new_axis == 1:
-        ret = tf.stack(input_sequence, axis=axis)
-        return ret
+        return tf.stack(input_sequence, axis=axis)
 
 
 def unique_consecutive(

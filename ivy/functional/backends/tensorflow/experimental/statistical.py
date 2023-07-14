@@ -63,8 +63,6 @@ def histogram(
         dtype=dtype,
         name="histogram",
     )
-    if density:
-        pass
     # TODO: Tensorflow native dtype argument is not working
     if dtype:
         ret = tf.cast(ret, dtype)
@@ -124,14 +122,13 @@ def quantile(
 ) -> Union[tf.Tensor, tf.Variable]:
     axis = tuple(axis) if isinstance(axis, list) else axis
 
-    result = tfp.stats.percentile(
+    return tfp.stats.percentile(
         a,
         tf.math.multiply(q, 100),
         axis=axis,
         interpolation=interpolation,
         keepdims=keepdims,
     )
-    return result
 
 
 def corrcoef(
@@ -156,8 +153,7 @@ def corrcoef(
         cov_t = (tf.transpose(xarr - mean_t) @ (xarr - mean_t)) / (x.shape[1] - 1)
 
     cov2_t = tf.linalg.diag(1 / tf.sqrt(tf.linalg.diag_part(cov_t)))
-    cor = cov2_t @ cov_t @ cov2_t
-    return cor
+    return cov2_t @ cov_t @ cov2_t
 
 
 def nanmedian(
@@ -258,11 +254,7 @@ def cov(
             dtype = tf.experimental.numpy.result_type(x1, x2, tf.float64)
 
     if ddof is None:
-        if bias == 0:
-            ddof = 1
-        else:
-            ddof = 0
-
+        ddof = 1 if bias == 0 else 0
     X = tf.experimental.numpy.array(x1, ndmin=2, dtype=dtype)
     if not rowVar and tf.shape(X)[0] != 1:
         X = tf.transpose(X)
@@ -299,11 +291,7 @@ def cov(
         if tf.experimental.numpy.any(aweights < 0):
             raise ValueError("aweights cannot be negative")
 
-        if w is None:
-            w = aweights
-        else:
-            w = w * aweights
-
+        w = aweights if w is None else w * aweights
     avg, w_sum = tf.experimental.numpy.average(X, axis=1, weights=w, returned=True)
     w_sum = w_sum[0]
 
@@ -320,11 +308,7 @@ def cov(
         fact = 0.0
 
     X -= avg[:, None]
-    if w is None:
-        X_T = tf.transpose(X)
-    else:
-        X_T = tf.transpose(X * w)
-
+    X_T = tf.transpose(X) if w is None else tf.transpose(X * w)
     fact = tf.cast(fact, tf.as_dtype(dtype))
     c = tf.matmul(X, tf.math.conj(X_T))
     return tf.math.truediv(c, fact)
@@ -377,7 +361,7 @@ def cummax(
             )
             x = tf.experimental.numpy.swapaxes(x, axis, -1)
             res, indices = __find_cummax(x, axis=axis)
-        elif reverse:
+        else:
             x = tf.experimental.numpy.flip(x, axis=axis)
             x, indices = __find_cummax(x, axis=axis)
             res, indices = tf.experimental.numpy.flip(
@@ -477,15 +461,11 @@ def cummin(
     if reverse:
         x = tf.reverse(x, axis=[axis])
     x_unstacked = tf.unstack(x, axis=axis)
-    cummin_x_unstacked = []
-    cummin_x_unstacked.append(x_unstacked[0])
+    cummin_x_unstacked = [x_unstacked[0]]
     for i, x_sub in enumerate(x_unstacked[1:]):
         cummin_x_sub = tf.minimum(cummin_x_unstacked[i], x_sub)
         cummin_x_unstacked.append(cummin_x_sub)
     cummin_x = tf.stack(cummin_x_unstacked, axis=axis)
     if reverse:
         cummin_x = tf.reverse(cummin_x, axis=[axis])
-    if dtype is None:
-        return cummin_x
-    else:
-        return tf.cast(cummin_x, dtype)
+    return cummin_x if dtype is None else tf.cast(cummin_x, dtype)

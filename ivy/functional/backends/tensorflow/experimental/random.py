@@ -36,10 +36,7 @@ def dirichlet(
 ) -> Union[tf.Tensor, tf.Variable]:
     size = size if size is not None else len(alpha)
 
-    if dtype is None:
-        dtype = tf.float64
-    else:
-        dtype = dtype
+    dtype = tf.float64 if dtype is None else dtype
     if seed is not None:
         tf.random.set_seed(seed)
     return tf.cast(
@@ -117,9 +114,7 @@ def poisson(
         _check_shapes_broadcastable(lam.shape, shape)
         lam = tf.broadcast_to(lam, tuple(shape))
         ret = tf.random.poisson((), lam, dtype=dtype, seed=seed)
-        if tf.reduce_any(lam < 0):
-            return tf.where(lam < 0, fill_value, ret)
-        return ret
+        return tf.where(lam < 0, fill_value, ret) if tf.reduce_any(lam < 0) else ret
 
 
 def bernoulli(

@@ -100,7 +100,12 @@ def eig(
     *,
     out: Optional[Union[tf.Tensor, tf.Variable]] = None,
 ) -> Tuple[tf.Tensor]:
-    if not ivy.dtype(x) in (ivy.float32, ivy.float64, ivy.complex64, ivy.complex128):
+    if ivy.dtype(x) not in (
+        ivy.float32,
+        ivy.float64,
+        ivy.complex64,
+        ivy.complex128,
+    ):
         return tf.linalg.eig(tf.cast(x, tf.float64))
     return tf.linalg.eig(x)
 
@@ -109,7 +114,12 @@ def eigvals(
     x: Union[tf.Tensor, tf.Variable],
     /,
 ) -> Union[tf.Tensor, tf.Variable]:
-    if not ivy.dtype(x) in (ivy.float32, ivy.float64, ivy.complex64, ivy.complex128):
+    if ivy.dtype(x) not in (
+        ivy.float32,
+        ivy.float64,
+        ivy.complex64,
+        ivy.complex128,
+    ):
         return tf.linalg.eigvals(tf.cast(x, tf.float64))
     return tf.linalg.eigvals(x)
 
@@ -147,8 +157,7 @@ def multi_dot(
     # TODO: reimplement this function once tf adds multi_dot or inplace updates
     if len(x) < 2:
         raise ValueError("Expecting at least two tensors.")
-    dot_out = _reduce(tf.matmul, x)
-    return dot_out
+    return _reduce(tf.matmul, x)
 
 
 @with_unsupported_dtypes({"1.25.0 and below": ("float16", "bfloat16")}, backend_version)
@@ -160,12 +169,7 @@ def cond(
     out: Optional[Union[tf.Tensor, tf.Variable]] = None,
 ) -> Union[tf.Tensor, tf.Variable]:
     svd = tf.linalg.svd(x, compute_uv=False)
-    if len(x.shape) >= 3:
-        ax = len(x.shape) // 2
-    elif len(x.shape) >= 3 and p == -1:
-        ax = [-1, -2]
-    else:
-        ax = None
+    ax = len(x.shape) // 2 if len(x.shape) >= 3 else None
     if p is None or p == 2:
         k = tf.reduce_max(svd, axis=ax) / tf.reduce_min(svd, axis=ax)
     elif p == "nuc":
